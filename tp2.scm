@@ -54,7 +54,9 @@
 
 ;;Get data of a node
 (define (get-data node)
-  (cdr (assoc 'data node)))
+  (let ((x (assoc 'data node)))
+    (if (eq? #f x) '() (cdr x))))
+
 
 ;;Get left child of node
 ;;If node is empty, returns empty.
@@ -136,7 +138,7 @@
 
 ;;TESTING
 (parse '(+ + + +) '() '())
-(define tree (parse '(1 3 4 + 5 5 6 - * /) '() '()))
+(define tree (parse '(1 3 4 + 5 6 4 - * + /) '() '()))
 (get-data(get-rchild(get-rchild(get-rchild(get-rchild(get-rchild tree))))))
 (get-rchild tree)
 (get-data tree)
