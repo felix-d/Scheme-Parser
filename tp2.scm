@@ -84,16 +84,22 @@
 
 ;;MAIN PARSING FUNCTION
 (define (parse chaine stack tree)
-  (if (and (null? chaine) (null? tree)) 'ERROR_empty_expression
-      (if (null? chaine) (car tree)
-          (let((c (car chaine)))
-            (cond
-             ((null? c) (car tree))
-             ((number? c)
-              (parse (cdr chaine)(append stack (list(make-node c '()))) tree))
-             ((symbol? c)
-              (parse (cdr chaine)(append (remove-last-two stack) (list(make-node c (get-last-two stack))))
-                     (list(make-node c (get-last-two stack))))))))))
+  (cond ((and (null? chaine) (null? tree)) 'ERROR_empty_expression)
+        ((and (null? chaine) (= 2 (length stack))) 'ERROR_syntax_error)
+        (else (if (null? chaine) (car tree)
+                  (let((c (car chaine)))
+                    (cond
+                     ((null? c) (car tree))
+                     ((number? c)
+                      (parse (cdr chaine)
+                             (append stack (list(make-node c '())))
+                             tree))
+                     ((symbol? c)
+                      (if(< (length stack) 2) 'ERROR_syntax_error
+                         (parse (cdr chaine)
+                                (append (remove-last-two stack)
+                                        (list(make-node c (get-last-two stack))))
+                                (list(make-node c (get-last-two stack))))))))))))
 
 ;;TRAITER EXPRESSION
 (define traiter
@@ -123,8 +129,8 @@
 ;;;----------------------------------------------------------------------------
 
 ;;TESTING
-(parse '(5 2 +) '() '())
-(define tree (parse '(1 3 4 + 5 6 - * /) '() '()))
+(parse '(6 +) '() '())
+(define tree (parse '(1 3 4 + 5 5 6 - * /) '() '()))
 (get-data(get-rchild(get-rchild(get-rchild(get-rchild(get-rchild tree))))))
 (get-rchild tree)
 (get-data tree)
