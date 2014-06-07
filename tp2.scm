@@ -86,25 +86,27 @@
 
 ;;MAIN PARSING FUNCTION
 (define (parse chaine stack tree)
-  (cond ((and (null? chaine) (null? tree)) 'ERROR_empty_expression)
-        ((and (null? chaine) (= 2 (length stack))) 'ERROR_syntax_error)
-        (else (if (null? chaine)
-                  (car tree)
-                  (let((c (car chaine)))
-                    (cond
-                     ((null? c) (car tree))
-                     ((number? c)
-                      (parse (cdr chaine)
-                             (append stack (list(make-node c '())))
-                             tree))
-                     ((symbol? c)
-                      (cond
-                       ((< (length stack) 2) 'ERROR_syntax_error)
-                       ((not(member c operators)) 'ERROR_unknown_char)
-                       (else (parse (cdr chaine)
-                                    (append (remove-last-two stack)
-                                            (list(make-node c (get-last-two stack))))
-                                    (list(make-node c (get-last-two stack)))))))))))))
+  (cond
+   ((and (null? chaine) (null? tree) (null? stack)) 'ERROR_empty_expression)
+                                        ;Trop de chiffres
+   ((and (null? chaine) (not(= 1 (length stack)))) 'ERROR_syntax_error)
+   (else (if (null? chaine)
+             (car tree)
+             (let((c (car chaine)))
+               (cond
+                ((null? c) (car tree))
+                ((number? c)
+                 (parse (cdr chaine)
+                        (append stack (list(make-node c '())))
+                        tree))
+                ((symbol? c)
+                 (cond
+                  ((not(member c operators)) 'ERROR_unknown_char)
+                  ((< (length stack) 2) 'ERROR_syntax_error)
+                                    (else (parse (cdr chaine)
+                               (append (remove-last-two stack)
+                                       (list(make-node c (get-last-two stack))))
+                               (list(make-node c (get-last-two stack)))))))))))))
 
 ;;TRAITER EXPRESSION
 (define traiter
@@ -113,7 +115,6 @@
     (if (symbol? e) (display-error e) '()))))
 
 ;;;----------------------------------------------------------------------------
-
 ;;; Ne pas modifier cette section.
 
 (define go
@@ -134,7 +135,7 @@
 ;;;----------------------------------------------------------------------------
 
 ;;TESTING
-(parse '(1 6 - 12 a +) '() '())
+(parse '(+ + + +) '() '())
 (define tree (parse '(1 3 4 + 5 5 6 - * /) '() '()))
 (get-data(get-rchild(get-rchild(get-rchild(get-rchild(get-rchild tree))))))
 (get-rchild tree)
