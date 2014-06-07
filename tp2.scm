@@ -37,7 +37,9 @@
 (define (display-error e)
   (cond
    ((eq? e 'ERROR_empty_expression)
-    (string->list "Expression vide\n"))))
+    (string->list "Expression vide\n"))
+   ((eq? e 'ERROR_syntax_error)
+    (string->list "Erreur de syntaxe\n"))))
 
 ;;Return a node in the form of a list
 ;;'(('data. data)'('('lchild. leftchild)'('rchild . rightchild))
@@ -86,7 +88,8 @@
 (define (parse chaine stack tree)
   (cond ((and (null? chaine) (null? tree)) 'ERROR_empty_expression)
         ((and (null? chaine) (= 2 (length stack))) 'ERROR_syntax_error)
-        (else (if (null? chaine) (car tree)
+        (else (if (null? chaine)
+                  (car tree)
                   (let((c (car chaine)))
                     (cond
                      ((null? c) (car tree))
@@ -95,11 +98,13 @@
                              (append stack (list(make-node c '())))
                              tree))
                      ((symbol? c)
-                      (if(< (length stack) 2) 'ERROR_syntax_error
-                         (parse (cdr chaine)
-                                (append (remove-last-two stack)
-                                        (list(make-node c (get-last-two stack))))
-                                (list(make-node c (get-last-two stack))))))))))))
+                      (cond
+                       ((< (length stack) 2) 'ERROR_syntax_error)
+                       ((not(member c operators)) 'ERROR_unknown_char)
+                       (else (parse (cdr chaine)
+                                    (append (remove-last-two stack)
+                                            (list(make-node c (get-last-two stack))))
+                                    (list(make-node c (get-last-two stack)))))))))))))
 
 ;;TRAITER EXPRESSION
 (define traiter
@@ -129,7 +134,7 @@
 ;;;----------------------------------------------------------------------------
 
 ;;TESTING
-(parse '(6 +) '() '())
+(parse '(1 6 - 12 a +) '() '())
 (define tree (parse '(1 3 4 + 5 5 6 - * /) '() '()))
 (get-data(get-rchild(get-rchild(get-rchild(get-rchild(get-rchild tree))))))
 (get-rchild tree)
