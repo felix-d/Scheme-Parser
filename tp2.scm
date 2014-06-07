@@ -55,12 +55,18 @@
   (cdr (assoc 'data node)))
 
 ;;Get left child of node
+;;If node is empty, returns empty.
+;;If node is a leaf and has no children, return empty
 (define (get-lchild node)
-  (cdr(assoc 'lchild (cadr node))))
+  (if (null? node) '()
+  (let ((x (assoc 'lchild (cadr node))))
+    (if (eq? x #f) '() (cdr x)))))
 
 ;;Get right child of node
 (define (get-rchild node)
- (cdr(assoc 'rchild (cadr node))))
+  (if (null? node) '()
+  (let ((x (assoc 'rchild(cadr node))))
+    (if (eq? x #f) '() (cdr x)))))
 
 ;;Is node a leaf?
 (define (leaf? node)
@@ -72,6 +78,10 @@
   (let ((l (reverse liste)))
     (list (cadr l) (car l))))
 
+(define (remove-last-two liste)
+  (let ((l (reverse liste)))
+        (reverse(cddr l))))
+
 ;;MAIN PARSING FUNCTION
 (define (parse chaine stack tree)
   (if (and (null? chaine) (null? tree)) 'ERROR_empty_expression
@@ -82,10 +92,10 @@
              ((number? c)
               (parse (cdr chaine)(append stack (list(make-node c '()))) tree))
              ((symbol? c)
-              (parse (cdr chaine)(append stack (list(make-node c (get-last-two stack))))
+              (parse (cdr chaine)(append (remove-last-two stack) (list(make-node c (get-last-two stack))))
                      (list(make-node c (get-last-two stack))))))))))
 
-;;TRAITER EXPRESSION - initialement fourni par feely
+;;TRAITER EXPRESSION
 (define traiter
   (lambda (expr)
     (let((e (parse expr '() '())))
@@ -113,9 +123,9 @@
 ;;;----------------------------------------------------------------------------
 
 ;;TESTING
-(parse '(1 3 4 + 5 6 - * /) '() '())
+(parse '(5 2 +) '() '())
 (define tree (parse '(1 3 4 + 5 6 - * /) '() '()))
-(get-data(get-rchild(get-rchild tree)))
+(get-data(get-rchild(get-rchild(get-rchild(get-rchild(get-rchild tree))))))
 (get-rchild tree)
 (get-data tree)
 (parse '() '() '())
