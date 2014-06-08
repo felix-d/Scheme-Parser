@@ -130,15 +130,17 @@
         (else (display "  ")
               (print-spaces (- n 1)))))
 
-(define (display-scheme tree)
-  (if(not(leaf? tree))(display "("))
-  (display(get-data tree))
-  (if(not(leaf? tree))
-     (display-scheme (get-lchild tree)))
-  (if(not(leaf? tree))
-     (display-scheme (get-rchild tree)))
-  (if(not(leaf? tree))(display ")")))
 
+(define (display-scheme tree)
+  (cond((not(leaf? tree))
+        (display " (")
+        (display(get-data tree))
+        (display-scheme (get-lchild tree))
+        (display-scheme (get-rchild tree))
+        (display ")"))
+       (else
+        (display " ")
+        (display (get-data tree)))))
 
 (define (inorder-traversal tree)
   (if(not(leaf? tree)) (inorder-traversal (get-lchild tree)))
@@ -150,19 +152,15 @@
  (if(not(leaf? tree)) (preorder-traversal (get-lchild tree)))
  (if(not(leaf? tree)) (preorder-traversal (get-rchild tree))))
 
-
-
 (define (postorder-traversal tree)
-  (if(not(leaf? lc))
-                                  (postorder-traversal (get-lchild tree))))
-  (let((rc (get-rchild tree))) (if(not(leaf? rc))
-                                  (postorder-traversal (get-rchild tree))))
+  (if(not(leaf? tree)) (postorder-traversal (get-lchild tree)))
+  (if(not(leaf? tree)) (postorder-traversal (get-rchild tree)))
   (display (get-data tree)))
 
 ;;TRAITER EXPRESSION
 (define traiter
   (lambda (expr)
-    (let((e (parse expr '() '())))
+    (let((e (parse expr)))
       (if (symbol? e) (display-error e) '()))))
 
 ;;;----------------------------------------------------------------------------
@@ -181,21 +179,21 @@
   (lambda (ligne)
     (traiter (string->list ligne))))
 
-;(go)
+(go)
 
 ;;;----------------------------------------------------------------------------
 
 ;;TESTING
-(parse '(+ + + +))
-(define tree (parse '(1 3 4 + 5 6 4 - * + /  2 1 - +)))
-(display-scheme tree)
-(print (get-data tree))
-(print-tree tree)
-(define tree (parse '(1 3 +)))
-(leaf? tree)
+;;(parse '(+ + + +))
+;;(define tree1 (parse '(1 3 4 + 5 6 4 - * + /  2 1 - +)))
+;;(display-scheme tree1)
+;;(print (get-data tree1))
+;;(print-tree tree1)
+;;(define tree2 (parse '(1 3 +)))
+;;(leaf? (get-rchild tree2))
 
-(get-data(get-rchild tree))
-(get-rchild tree)
-(get-data tree)
-(parse '())
-(leaf? tree)
+;;(get-data(get-rchild tree2))
+;;(get-rchild tree2)
+;;(get-data tree2)
+;;(parse '())
+;;(leaf? tree2)
