@@ -46,11 +46,13 @@
 (define (make-node data children)
   (if (null? children)
       (list (cons 'data data)'())
-      (list (cons 'data data)(list (cons 'lchild (car children))(cons 'rchild (cadr children))))))
+      (list (cons 'data data)
+            (list (cons 'lchild (car children))
+                  (cons 'rchild (cadr children))))))
 
 ;;Get children
 (define (get-children node)
-  (cdr node))
+  (if(null? node) '() (cdr node)))
 
 ;;Get data of a node
 (define (get-data node)
@@ -74,7 +76,7 @@
 
 ;;Is node a leaf?
 (define (leaf? node)
-  (null? (children node)))
+  (null? (get-children node)))
 
 ;;Get last two elements of list as a list
 ;;Used to get last two elements on the stack
@@ -87,10 +89,11 @@
         (reverse(cddr l))))
 
 ;;MAIN PARSING FUNCTION
-(define (parse chaine stack tree)
+(define (parse tree)
+  (parse-helper tree '() '()))
+(define (parse-helper chaine stack tree)
   (cond
    ((and (null? chaine) (null? tree) (null? stack)) 'ERROR_empty_expression)
-                                        ;Trop de chiffres
    ((and (null? chaine) (not(= 1 (length stack)))) 'ERROR_syntax_error)
    (else (if (null? chaine)
              (car tree)
@@ -98,23 +101,59 @@
                (cond
                 ((null? c) (car tree))
                 ((number? c)
-                 (parse (cdr chaine)
+                 (parse-helper (cdr chaine)
                         (append stack (list(make-node c '())))
                         tree))
                 ((symbol? c)
                  (cond
                   ((not(member c operators)) 'ERROR_unknown_char)
                   ((< (length stack) 2) 'ERROR_syntax_error)
-                                    (else (parse (cdr chaine)
+                                    (else (parse-helper (cdr chaine)
                                (append (remove-last-two stack)
                                        (list(make-node c (get-last-two stack))))
                                (list(make-node c (get-last-two stack)))))))))))))
+
+(define (print-tree tree)
+  (print-tree-help tree 0))
+
+(define (print-tree-help tree n)
+  (cond ((leaf? tree))
+        (else
+         (print-spaces n)
+         (display (get-data tree)) (newline)
+         (print-tree-help (get-rchild tree) (+ n 1))
+         (print-tree-help (get-lchild tree) (+ n 1)))))
+
+(define (print-spaces n)
+  (cond ((= n 0))
+        (else (display "  ")
+              (print-spaces (- n 1)))))
+
+
+(define (inorder-traversal tree)
+  (let((lc (get-lchild tree))) (if(not(leaf? lc))
+                                  (inorder-traversal (get-lchild tree))))
+  (display (get-data tree))
+  (let((rc (get-rchild tree))) (if(not(leaf? rc))
+                                  (inorder-traversal (get-rchild tree)))))
+(define (preorder-traversal tree)
+  (display(get-data tree))
+  (let((lc (get-lchild tree))) (if(not(leaf? lc))
+                                  (preorder-traversal (get-lchild tree))))
+  (let((rc (get-rchild tree))) (if(not(leaf? rc))
+                                  (preorder-traversal (get-rchild tree)))))
+(define (postorder-traversal tree)
+  (let((lc (get-lchild tree))) (if(not(leaf? lc))
+                                  (postorder-traversal (get-lchild tree))))
+  (let((rc (get-rchild tree))) (if(not(leaf? rc))
+                                  (postorder-traversal (get-rchild tree))))
+  (display (get-data tree)))
 
 ;;TRAITER EXPRESSION
 (define traiter
   (lambda (expr)
     (let((e (parse expr '() '())))
-    (if (symbol? e) (display-error e) '()))))
+      (if (symbol? e) (display-error e) '()))))
 
 ;;;----------------------------------------------------------------------------
 ;;; Ne pas modifier cette section.
@@ -132,14 +171,19 @@
   (lambda (ligne)
     (traiter (string->list ligne))))
 
-(go)
+;(go)
 
 ;;;----------------------------------------------------------------------------
 
 ;;TESTING
-(parse '(+ + + +) '() '())
-(define tree (parse '(1 3 4 + 5 6 4 - * + /) '() '()))
-(get-data(get-rchild(get-rchild(get-rchild(get-rchild(get-rchild tree))))))
+(parse '(+ + + +))
+(define tree (parse '(1 3 4 + 5 6 4 - * + /  2 1 - +)))
+(postorder-traversal tree)
+(print (get-data tree))
+(print-tree tree)
+(define tree (parse '(1 3 +)))
+(get-data(get-rchild tree))
 (get-rchild tree)
 (get-data tree)
-(parse '() '() '())
+(parse '())
+(leaf? tree)
