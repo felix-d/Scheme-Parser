@@ -52,7 +52,7 @@
 
 ;;Get children
 (define (get-children node)
-  (if(null? node) '() (cdr node)))
+  (if(not(null? node))(cdr node)))
 
 ;;Get data of a node
 (define (get-data node)
@@ -76,7 +76,8 @@
 
 ;;Is node a leaf?
 (define (leaf? node)
-  (null? (get-children node)))
+  (null? (car(get-children node))))
+
 
 ;;Get last two elements of list as a list
 ;;Used to get last two elements on the stack
@@ -129,21 +130,30 @@
         (else (display "  ")
               (print-spaces (- n 1)))))
 
+(define (display-scheme tree)
+  (if(not(leaf? tree))(display "("))
+  (display(get-data tree))
+  (if(not(leaf? tree))
+     (display-scheme (get-lchild tree)))
+  (if(not(leaf? tree))
+     (display-scheme (get-rchild tree)))
+  (if(not(leaf? tree))(display ")")))
+
 
 (define (inorder-traversal tree)
-  (let((lc (get-lchild tree))) (if(not(leaf? lc))
-                                  (inorder-traversal (get-lchild tree))))
+  (if(not(leaf? tree)) (inorder-traversal (get-lchild tree)))
   (display (get-data tree))
-  (let((rc (get-rchild tree))) (if(not(leaf? rc))
-                                  (inorder-traversal (get-rchild tree)))))
+  (if(not(leaf? tree)) (inorder-traversal (get-rchild tree))))
+
 (define (preorder-traversal tree)
   (display(get-data tree))
-  (let((lc (get-lchild tree))) (if(not(leaf? lc))
-                                  (preorder-traversal (get-lchild tree))))
-  (let((rc (get-rchild tree))) (if(not(leaf? rc))
-                                  (preorder-traversal (get-rchild tree)))))
+ (if(not(leaf? tree)) (preorder-traversal (get-lchild tree)))
+ (if(not(leaf? tree)) (preorder-traversal (get-rchild tree))))
+
+
+
 (define (postorder-traversal tree)
-  (let((lc (get-lchild tree))) (if(not(leaf? lc))
+  (if(not(leaf? lc))
                                   (postorder-traversal (get-lchild tree))))
   (let((rc (get-rchild tree))) (if(not(leaf? rc))
                                   (postorder-traversal (get-rchild tree))))
@@ -178,10 +188,12 @@
 ;;TESTING
 (parse '(+ + + +))
 (define tree (parse '(1 3 4 + 5 6 4 - * + /  2 1 - +)))
-(postorder-traversal tree)
+(display-scheme tree)
 (print (get-data tree))
 (print-tree tree)
 (define tree (parse '(1 3 +)))
+(leaf? tree)
+
 (get-data(get-rchild tree))
 (get-rchild tree)
 (get-data tree)
