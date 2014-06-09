@@ -232,8 +232,9 @@
   (cond ((number? (get-data tree)) (get-data tree))
         (else ((get-func (get-data tree))
                (get-value (get-lchild tree))
-               (get-value (get-rchild tree))))))
-
+               (let ((v (get-value (get-rchild tree)))) (if(= v 0)
+                                                           'ERROR_division_by_zero
+                                                           v))))))
 ;;TRAITER EXPRESSION
 (define traiter
   (lambda (expr)
