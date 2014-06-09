@@ -30,20 +30,33 @@
         ((eq? '/ sym)(lambda(x y)(/ x y)))
         ((eq? '* sym)(lambda(x y)(* x y)))))
 
+(define (get-precedance sym)
+  (cond ((eq? '+ sym) 0)
+        ((eq? '- sym) 0)
+        ((eq? '/ sym) 1)
+        ((eq? '* sym) 1)))
+
+(define (get-dependance sym)
+  (cond ((eq? '+ sym) 0)
+        ((eq? '- sym) 1)
+        ((eq? '/ sym) 1)
+        ((eq? '* sym) 0)))
 
 
 ;;List of operators
 (define operators '(+ - / *))
 
 ;;Display errors
-(define (display-error e)
+(define (display-error e expr)
   (cond
    ((eq? e 'ERROR_empty_expression)
-    (string->list "Expression vide\n"))
+    (string->list "EXPRESSION VIDE\n\n"))
    ((eq? e 'ERROR_syntax_error)
-    (string->list "Erreur de syntaxe\n"))
+    (string->list (string-append "ERREUR DE SYNTAXE DANS L'EXPRESSION: "
+                                 (list->string expr) "\n\n")))
    ((eq? e 'ERROR_unknown_char)
-    (string->list "Caractère inconnu\n"))))
+    (string->list (string-append "CARACTERE INCONNU DANS L'EXPRESSION: "
+                                  (list->string expr) "\n\n")))))
 
 ;;'(('data. data)'('('lchild. leftchild)'('rchild . rightchild))
 (define (make-node data children)
@@ -138,6 +151,53 @@
           (string-append str " " (number->string(get-data tree))))))
   (string->list(display-scheme-helper tree "")))
 
+(define (display-postscript tree)
+  (define (display-postscript-helper tree str)
+    (cond ((not(leaf? tree))
+           (string-append str
+                          (display-postscript-helper (get-lchild tree) str)
+                          (display-postscript-helper (get-rchild tree) str)
+                          " "
+                          (symbol->string(get-postscript(get-data tree)))))
+          (else
+           (string-append str " " (number->string(get-data tree))))))
+  (string->list(display-postscript-helper tree "")))
+
+(define (display-C tree)
+  (define (display-C-helper tree str)
+    (if (not(leaf? tree))
+        (string-append
+         str
+         (cond ((and
+                 (not(leaf? (get-lchild tree)))
+                 (> (get-precedance (get-data tree))
+                    (get-precedance(get-data (get-lchild tree)))))
+                (string-append "("
+                               (display-C-helper
+                                (get-lchild tree)
+                                str)
+                               ")"))
+               (else
+                (display-C-helper (get-lchild tree) str)))
+
+         (symbol->string(get-data tree))
+         (cond ((or
+                 (and
+                  (not(leaf? (get-rchild tree)))
+                  (> (get-precedance (get-data tree))
+                     (get-precedance (get-data (get-rchild tree)))))
+                 (and
+                  (not(leaf? (get-rchild tree)))
+                  (eq? (get-precedance(get-data tree))
+                       (get-precedance(get-data(get-rchild tree))))
+                  (eq? (get-dependance (get-data tree)) 1)))
+                (string-append "(" (display-C-helper (get-rchild
+                                                      tree) str)
+                               ")"))
+               (else (display-C-helper (get-rchild tree) str))))
+        (string-append str (number->string(get-data tree)))))
+  (string->list(display-C-helper tree "")))
+
 (define (inorder-traversal tree)
   (if(not(leaf? tree)) (inorder-traversal (get-lchild tree)))
   (display (get-data tree))
@@ -202,13 +262,23 @@
   (lambda (expr)
     (let((e (preprocess expr)))
       (if (symbol? e) ; preprocessing error
-          (display-error e)
+          (display-error e expr)
           (let((ee (parse e)))
             (cond ((symbol? ee) ; parsing error
-                (display-error ee))
-                  (else (print-tree ee)
-                        (append (string->list "    Scheme: ")
+                (display-error ee expr))
+                  (else
+                        (append (string->list "    Scheme:")
                                 (display-scheme ee)
+                                '(#\newline)
+                                (string->list "         C: ")
+                                (display-C ee)
+                                '(#\newline)
+                                (string->list "Postscript:")
+                                (display-postscript ee)
+                                '(#\newline)
+                                (string->list "     Value: ")
+                                (string->list(number->string (get-value ee)))
+                                '(#\newline)
                                 '(#\newline)))))))))
 
 ;;;----------------------------------------------------------------------------
@@ -234,12 +304,12 @@
 ;;TESTING
 ;;(print-tree (parse (preprocess (string->list "1 2 + 5 /"))))
 ;;(parse '())
-(define tree1 (parse '(6 1 3 - 1 + 5 * /)))
-(get-value tree1)
-(display-scheme tree1)
+(define tree1 (parse '(6 10 3 - 1 + 5 * /)))
+;(get-value tree1)
+;(display-scheme tree1)
 ;;(print (get-data tree1))
-(print-tree tree1)
-(define tree2 (parse '(1 3 +)))
+;(print-tree tree1)
+;(define tree2 (parse '(1 3 +)))
 ;;(leaf? tree2)
 
 ;;(get-data(get-rchild tree2))
