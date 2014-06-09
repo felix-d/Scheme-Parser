@@ -39,7 +39,11 @@
    ((eq? e 'ERROR_empty_expression)
     (string->list "Expression vide\n"))
    ((eq? e 'ERROR_syntax_error)
+    (string->list "Erreur de syntaxe\n"))
+   ((eq? e 'ERROR_unknown_char)
     (string->list "Erreur de syntaxe\n"))))
+
+(display-error 'ERROR_syntax_error)
 
 ;;Return a node in the form of a list
 ;;'(('data. data)'('('lchild. leftchild)'('rchild . rightchild))
@@ -91,39 +95,36 @@
 
 ;;MAIN PARSING FUNCTION
 (define (parse tree)
-  (parse-helper tree '() '()))
-(define (parse-helper chaine stack tree)
-  (cond
-   ((and (null? chaine) (null? tree) (null? stack)) 'ERROR_empty_expression)
-   ((and (null? chaine) (not(= 1 (length stack)))) 'ERROR_syntax_error)
-   (else (if (null? chaine)
-             (car tree)
-             (let((c (car chaine)))
-               (cond
-                ((null? c) (car tree))
-                ((number? c)
-                 (parse-helper (cdr chaine)
-                        (append stack (list(make-node c '())))
-                        tree))
-                ((symbol? c)
+  (define (parse-helper chaine stack tree)
+    (cond
+     ((and (null? chaine) (not(= 1 (length stack)))) 'ERROR_syntax_error)
+     (else (if (null? chaine)
+               (car tree)
+               (let((c (car chaine)))
                  (cond
-                  ((not(member c operators)) 'ERROR_unknown_char)
-                  ((< (length stack) 2) 'ERROR_syntax_error)
-                                    (else (parse-helper (cdr chaine)
-                               (append (remove-last-two stack)
-                                       (list(make-node c (get-last-two stack))))
-                               (list(make-node c (get-last-two stack)))))))))))))
+                  ((null? c) (car tree))
+                  ((number? c)
+                   (parse-helper (cdr chaine)
+                                 (append stack (list(make-node c '())))
+                                 tree))
+                  ((symbol? c)
+                   (cond
+                    ((< (length stack) 2) 'ERROR_syntax_error)
+                    (else (parse-helper (cdr chaine)
+                                        (append (remove-last-two stack)
+                                                (list(make-node c (get-last-two stack))))
+                                        (list(make-node c (get-last-two stack)))))))))))))
+  (parse-helper tree '() '()))
 
 (define (print-tree tree)
+  (define (print-tree-help tree n)
+    (print-spaces n)
+    (display (get-data tree))
+    (newline)
+    (cond ((not(leaf? tree))
+           (print-tree-help (get-rchild tree) (+ n 1))
+           (print-tree-help (get-lchild tree) (+ n 1)))))
   (print-tree-help tree 0))
-
-(define (print-tree-help tree n)
-  (cond ((leaf? tree))
-        (else
-         (print-spaces n)
-         (display (get-data tree)) (newline)
-         (print-tree-help (get-rchild tree) (+ n 1))
-         (print-tree-help (get-lchild tree) (+ n 1)))))
 
 (define (print-spaces n)
   (cond ((= n 0))
@@ -134,7 +135,7 @@
 (define (display-scheme tree)
   (cond((not(leaf? tree))
         (display " (")
-        (display(get-data tree))
+        (display (get-data tree))
         (display-scheme (get-lchild tree))
         (display-scheme (get-rchild tree))
         (display ")"))
@@ -157,11 +158,52 @@
   (if(not(leaf? tree)) (postorder-traversal (get-rchild tree)))
   (display (get-data tree)))
 
+(define (preprocess input)
+  (define (preprocess-helper input numbers output)
+    (cond ((and (not(null? numbers))(null? input)) 'ERROR_syntax_error)
+          ((and (null? input)(null? output)) 'ERROR_empty_expression)
+          ((and (null? input)(null? numbers)(not(null? output))) output)
+          (else
+           (let ((digit (string->number (list->string(list(car input)))))
+                 (num (string->number(list->string numbers)))
+                 (sym (string->symbol(list->string(list(car input)))))
+                 (numbers? (not(null? numbers))))
+             (cond ((number? digit)
+                    (preprocess-helper (cdr input)
+                                (append numbers (list(car input)))
+                                output))
+                   ((eq? (car input) #\space)
+                    (preprocess-helper (cdr input)
+                                '()
+                                (if numbers?
+                                    (append output (list num))
+                                    output)))
+                   ((member sym operators)
+                    (preprocess-helper (cdr input)
+                                '()
+                                (if numbers?
+                                    (append output (list num) (list sym))
+                                    (append output (list sym)))))
+                   (else 'ERROR_unknown_char))))))
+  (preprocess-helper input '() '()))
+
+(define delete
+  (lambda (item list)
+    (cond
+     ((null? list) '())
+     ((equal? item (car list)) (delete item (cdr list)))
+     (else (cons (car list) (delete item (cdr list)))))))
+
 ;;TRAITER EXPRESSION
 (define traiter
   (lambda (expr)
-    (let((e (parse expr)))
-      (if (symbol? e) (display-error e) '()))))
+    (let((e (preprocess expr)))
+      (if (symbol? e)
+          (display-error e)
+          (let((ee (parse e)))
+            (cond ((symbol? ee)
+                (display-error ee))
+                (else (print-tree ee) '())))))))
 
 ;;;----------------------------------------------------------------------------
 ;;; Ne pas modifier cette section.
@@ -184,13 +226,14 @@
 ;;;----------------------------------------------------------------------------
 
 ;;TESTING
-;;(parse '(+ + + +))
+;;(print-tree (parse (preprocess (string->list "1 2 + 5 /"))))
+;;(parse '())
 ;;(define tree1 (parse '(1 3 4 + 5 6 4 - * + /  2 1 - +)))
 ;;(display-scheme tree1)
 ;;(print (get-data tree1))
 ;;(print-tree tree1)
 ;;(define tree2 (parse '(1 3 +)))
-;;(leaf? (get-rchild tree2))
+;;(leaf? tree2)
 
 ;;(get-data(get-rchild tree2))
 ;;(get-rchild tree2)
