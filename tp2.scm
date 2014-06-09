@@ -18,17 +18,19 @@
 ;;; fonctions ne doivent pas faire d'affichage car c'est la fonction
 ;;; "go" qui se charge de cela.
 
-;;Operations
-(define (addition x y) (+ x y))
-(define (soustraction x y) (- x y))
-(define (division x y) (/ x y))
-(define (multiplication x y) (* x y))
+(define (get-postscript sym)
+  (cond ((eq? '+ sym)'add)
+        ((eq? '- sym)'sub)
+        ((eq? '* sym)'mul)
+        ((eq? '/ sym)'div)))
 
-;;Symbol precedance dependance function
-(define operator+ (list + #f #f addition))
-(define operator- (list - #f #t soustraction))
-(define operator/ (list / #t #t division))
-(define operator* (list * #t #f multiplication))
+(define (get-func sym)
+  (cond ((eq? '+ sym)(lambda(x y)(+ x y)))
+        ((eq? '- sym)(lambda(x y)(- x y)))
+        ((eq? '/ sym)(lambda(x y)(/ x y)))
+        ((eq? '* sym)(lambda(x y)(* x y)))))
+
+
 
 ;;List of operators
 (define operators '(+ - / *))
@@ -41,11 +43,8 @@
    ((eq? e 'ERROR_syntax_error)
     (string->list "Erreur de syntaxe\n"))
    ((eq? e 'ERROR_unknown_char)
-    (string->list "Erreur de syntaxe\n"))))
+    (string->list "Caractère inconnu\n"))))
 
-(display-error 'ERROR_syntax_error)
-
-;;Return a node in the form of a list
 ;;'(('data. data)'('('lchild. leftchild)'('rchild . rightchild))
 (define (make-node data children)
   (if (null? children)
@@ -62,7 +61,6 @@
 (define (get-data node)
   (let ((x (assoc 'data node)))
     (if (eq? #f x) '() (cdr x))))
-
 
 ;;Get left child of node
 ;;If node is empty, returns empty.
@@ -81,7 +79,6 @@
 ;;Is node a leaf?
 (define (leaf? node)
   (null? (car(get-children node))))
-
 
 ;;Get last two elements of list as a list
 ;;Used to get last two elements on the stack
@@ -185,6 +182,14 @@
                    (else 'ERROR_unknown_char))))))
   (preprocess-helper input '() '()))
 
+;;Get value of current tree
+(define (get-value tree)
+  (cond ((number? (get-data tree)) (get-data tree))
+        (else ((get-func (get-data tree))
+               (get-value (get-lchild tree))
+               (get-value (get-rchild tree))))))
+
+;;Returns a list rid of the specified item
 (define delete
   (lambda (item list)
     (cond
@@ -196,12 +201,15 @@
 (define traiter
   (lambda (expr)
     (let((e (preprocess expr)))
-      (if (symbol? e)
+      (if (symbol? e) ; preprocessing error
           (display-error e)
           (let((ee (parse e)))
-            (cond ((symbol? ee)
+            (cond ((symbol? ee) ; parsing error
                 (display-error ee))
-                (else (print-tree ee)(append (string->list "Scheme: ")(display-scheme ee) '(#\newline)))))))))
+                  (else (print-tree ee)
+                        (append (string->list "    Scheme: ")
+                                (display-scheme ee)
+                                '(#\newline)))))))))
 
 ;;;----------------------------------------------------------------------------
 ;;; Ne pas modifier cette section.
@@ -226,11 +234,12 @@
 ;;TESTING
 ;;(print-tree (parse (preprocess (string->list "1 2 + 5 /"))))
 ;;(parse '())
-;;(define tree1 (parse '(1 3 4 + 5 6 4 - * + /  2 1 - +)))
+(define tree1 (parse '(6 1 3 - 1 + 5 * /)))
+(get-value tree1)
 (display-scheme tree1)
 ;;(print (get-data tree1))
-;;(print-tree tree1)
-;;(define tree2 (parse '(1 3 +)))
+(print-tree tree1)
+(define tree2 (parse '(1 3 +)))
 ;;(leaf? tree2)
 
 ;;(get-data(get-rchild tree2))
