@@ -198,21 +198,6 @@
         (string-append str (number->string(get-data tree)))))
   (string->list(display-C-helper tree "")))
 
-(define (inorder-traversal tree)
-  (if(not(leaf? tree)) (inorder-traversal (get-lchild tree)))
-  (display (get-data tree))
-  (if(not(leaf? tree)) (inorder-traversal (get-rchild tree))))
-
-(define (preorder-traversal tree)
-  (display(get-data tree))
- (if(not(leaf? tree)) (preorder-traversal (get-lchild tree)))
- (if(not(leaf? tree)) (preorder-traversal (get-rchild tree))))
-
-(define (postorder-traversal tree)
-  (if(not(leaf? tree)) (postorder-traversal (get-lchild tree)))
-  (if(not(leaf? tree)) (postorder-traversal (get-rchild tree)))
-  (display (get-data tree)))
-
 (define (preprocess input)
   (define (preprocess-helper input numbers output)
     (cond ((and (not(null? numbers))(null? input)) 'ERROR_syntax_error)
@@ -248,14 +233,6 @@
         (else ((get-func (get-data tree))
                (get-value (get-lchild tree))
                (get-value (get-rchild tree))))))
-
-;;Returns a list rid of the specified item
-(define delete
-  (lambda (item list)
-    (cond
-     ((null? list) '())
-     ((equal? item (car list)) (delete item (cdr list)))
-     (else (cons (car list) (delete item (cdr list)))))))
 
 ;;TRAITER EXPRESSION
 (define traiter
@@ -304,8 +281,6 @@
 ;;TESTING
 ;;(print-tree (parse (preprocess (string->list "1 2 + 5 /"))))
 ;;(parse '())
-(define tree1 (parse '(6 10 3 - 1 + 5 * /)))
-;(get-value tree1)
 ;(display-scheme tree1)
 ;;(print (get-data tree1))
 ;(print-tree tree1)
