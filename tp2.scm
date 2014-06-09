@@ -131,17 +131,15 @@
         (else (display "  ")
               (print-spaces (- n 1)))))
 
-
 (define (display-scheme tree)
-  (cond((not(leaf? tree))
-        (display " (")
-        (display (get-data tree))
-        (display-scheme (get-lchild tree))
-        (display-scheme (get-rchild tree))
-        (display ")"))
-       (else
-        (display " ")
-        (display (get-data tree)))))
+  (define (display-scheme-helper tree str)
+    (cond((not(leaf? tree))
+          (string-append str " (" (symbol->string(get-data tree))
+                         (display-scheme-helper (get-lchild tree) str)
+                         (display-scheme-helper (get-rchild tree) str) ")"))
+         (else
+          (string-append str " " (number->string(get-data tree))))))
+  (string->list(display-scheme-helper tree "")))
 
 (define (inorder-traversal tree)
   (if(not(leaf? tree)) (inorder-traversal (get-lchild tree)))
@@ -203,7 +201,7 @@
           (let((ee (parse e)))
             (cond ((symbol? ee)
                 (display-error ee))
-                (else (print-tree ee) '())))))))
+                (else (print-tree ee)(append (string->list "Scheme: ")(display-scheme ee) '(#\newline)))))))))
 
 ;;;----------------------------------------------------------------------------
 ;;; Ne pas modifier cette section.
@@ -229,7 +227,7 @@
 ;;(print-tree (parse (preprocess (string->list "1 2 + 5 /"))))
 ;;(parse '())
 ;;(define tree1 (parse '(1 3 4 + 5 6 4 - * + /  2 1 - +)))
-;;(display-scheme tree1)
+(display-scheme tree1)
 ;;(print (get-data tree1))
 ;;(print-tree tree1)
 ;;(define tree2 (parse '(1 3 +)))
