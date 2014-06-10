@@ -327,27 +327,27 @@
 ;;;----------------------------------------------------------------------------
 
 (define (precise-division n d)
-  (define (helper n d l ndl)
-    (cond
-     ((= 0 (remainder n d)) (print-f-number (append l (list(quotient n d))) -1))
-     (else (if (= 0 (quotient n d))
-               (let ((x (* 10 n)))
-                 (let ((pe (pair-exists? ndl x d)))
-                   (if pe
-                       (print-f-number l pe)
-                       (helper x
-                               d
-                               (append l '(0))
-                               (append ndl (list (cons n d)))))))
-               (let ((x (* (- n (* d (quotient n d))) 10)))
-                 (let ((pe (pair-exists? ndl x d)))
-                   (if pe
-                       (print-f-number l pe)
-                       (helper x
-                               d
-                               (append l (list (quotient n d)))
-                               (append ndl (list(cons n d)))))))))))
-  (helper n d '() '()))
+   (define (helper n d l ndl)
+     (cond
+      ((= 0 (remainder n d)) (print-f-number (append l (list(quotient n d))) -1))
+      (else (if (= 0 (quotient n d))
+                (let ((x (* 10 n)))
+                  (let ((pe (pair-exists? ndl x d)))
+                    (if pe
+                        (print-f-number l pe)
+                        (helper x
+                                d
+                                (append l '(0))
+                                (append ndl (list (cons n d)))))))
+                (let ((x (* (- n (* d (quotient n d))) 10)))
+                  (let ((pe (pair-exists? ndl n d)))
+                    (if pe
+                        (print-f-number l pe)
+                        (helper x
+                                d
+                                (append l (list (quotient n d)))
+                                (append ndl (list(cons n d)))))))))))
+   (helper n d '() '()))
 
 
 ;;;----------------------------------------------------------------------------
