@@ -346,7 +346,9 @@
                         (helper x
                                 d
                                 (append l (list (quotient n d)))
-                                (append ndl (list(cons n d)))))))))))
+                                (if (not(null? l))
+                                    (append ndl (list(cons n d)))
+                                    '())))))))))
    (helper n d '() '()))
 
 
@@ -357,26 +359,30 @@
 ;;;----------------------------------------------------------------------------
 
 (define (print-f-number l pe)
-  (define (helper l str n)
+  (helper pe l "" -1 '()))
+
+  (define (helper pe l str n c)
     (if (null? l)
         (if(= -1 pe) str (string-append str "]"))
-        (cond
-         ((= n 0)
-               (helper
-                (cdr l)
-                (string-append str (number->string(car l)) ".")
-                1))
-              ((= n pe)
-               (helper
-                (cdr l)
-                (string-append str "[" (number->string(car l)))
-                (+ n 1)))
-              (else
-               (helper
-                (cdr l)
-                (string-append str (number->string(car l)))
-                (+ n 1))))))
-  (helper l "" 0))
+        (cond ((= n -1)
+               (helper pe
+                       (cdr l)
+                       (string-append str (number->string(car l)) ".")
+                       (+ n 1)
+                       (car l)))
+         ((or (and(= pe 1)(= 0 n))
+              (= n pe)
+              (if(not(null? c))
+                 (and(= (car l) c)
+                     (= n 1)
+                     (= (length l) 1))
+                 #f))
+          (helper pe (cdr l)
+                  (string-append str "[" (number->string(car l)))
+                  (+ n 1) '()))
+         (else (helper pe (cdr l)
+                       (string-append str (number->string(car l)))
+                       (+ n 1) '())))))
 
 
 ;;;----------------------------------------------------------------------------
