@@ -18,11 +18,20 @@
 ;;; fonctions ne doivent pas faire d'affichage car c'est la fonction
 ;;; "go" qui se charge de cela.
 
+;;;----------------------------------------------------------------------------
+;;; Get postscript symbol matching the operator.
+;;;----------------------------------------------------------------------------
+
 (define (get-postscript sym)
   (cond ((eq? '+ sym)'add)
         ((eq? '- sym)'sub)
         ((eq? '* sym)'mul)
         ((eq? '/ sym)'div)))
+
+
+;;;----------------------------------------------------------------------------
+;;; Get lambda matching the operator.
+;;;----------------------------------------------------------------------------
 
 (define (get-func sym)
   (cond ((eq? '+ sym)(lambda(x y)(+ x y)))
@@ -30,11 +39,21 @@
         ((eq? '/ sym)(lambda(x y)(/ x y)))
         ((eq? '* sym)(lambda(x y)(* x y)))))
 
+
+;;;----------------------------------------------------------------------------
+;;; Get precedance level of the operator.
+;;;----------------------------------------------------------------------------
+
 (define (get-precedance sym)
   (cond ((eq? '+ sym) 0)
         ((eq? '- sym) 0)
         ((eq? '/ sym) 1)
         ((eq? '* sym) 1)))
+
+
+;;;----------------------------------------------------------------------------
+;;; Get dependance level of the operator.
+;;;----------------------------------------------------------------------------
 
 (define (get-dependance sym)
   (cond ((eq? '+ sym) 0)
@@ -42,10 +61,18 @@
         ((eq? '/ sym) 1)
         ((eq? '* sym) 0)))
 
-;;List of operators
+
+;;;----------------------------------------------------------------------------
+;;; Simple list of operators for matching purposes.
+;;;----------------------------------------------------------------------------
+
 (define operators '(+ - / *))
 
-;;Display errors
+
+;;;----------------------------------------------------------------------------
+;;; Get error matching error symbol. Some include faulting expression.
+;;;----------------------------------------------------------------------------
+
 (define (display-error e expr)
   (cond
    ((eq? e 'ERROR_empty_expression)
@@ -60,7 +87,13 @@
     (string->list (string-append "ERREUR DIVISION PAR ZERO DANS L'EXPRESSION: "
                                  (list->string expr) "\n\n")))))
 
-;;'(('data. data)'('('lchild. leftchild)'('rchild . rightchild))
+
+;;;----------------------------------------------------------------------------
+;;; Creates a node from data and its children.
+;;; The form of the node is
+;;;'(('data . data) '(('lchild . lchild) ('rchild .rchild)))
+;;;----------------------------------------------------------------------------
+
 (define (make-node data children)
   (if (null? children)
       (list (cons 'data data)'())
@@ -68,45 +101,77 @@
             (list (cons 'lchild (car children))
                   (cons 'rchild (cadr children))))))
 
-;;Get children
+
+;;;----------------------------------------------------------------------------
+;;; Get children of a node.
+;;;----------------------------------------------------------------------------
+
 (define (get-children node)
   (if(not(null? node))(cdr node)))
 
-;;Get data of a node
+
+;;;----------------------------------------------------------------------------
+;;; Get data of a node.
+;;;----------------------------------------------------------------------------
+
 (define (get-data node)
   (let ((x (assoc 'data node)))
     (if (eq? #f x) '() (cdr x))))
 
-;;Get left child of node
-;;If node is empty, returns empty.
-;;If node is a leaf and has no children, return empty
+
+
+;;;----------------------------------------------------------------------------
+;;; Get left child of a node. If child doesn't exist, return '().
+;;;----------------------------------------------------------------------------
+
 (define (get-lchild node)
   (if (null? node) '()
   (let ((x (assoc 'lchild (cadr node))))
     (if (eq? x #f) '() (cdr x)))))
 
-;;Get right child of node
+
+;;;----------------------------------------------------------------------------
+;;; Get right child of a node. If child doesn't exist, return '().
+;;;----------------------------------------------------------------------------
+
 (define (get-rchild node)
   (if (null? node) '()
   (let ((x (assoc 'rchild(cadr node))))
     (if (eq? x #f) '() (cdr x)))))
 
-;;Is node a leaf?
+
+;;;----------------------------------------------------------------------------
+;;; Check if a node is a leaf.
+;;;----------------------------------------------------------------------------
+
 (define (leaf? node)
   (null? (car(get-children node))))
 
-;;Get last two elements of list as a list
-;;Used to get last two elements on the stack
+
+;;;----------------------------------------------------------------------------
+;;; Get last two elements of list as a list.
+;;;----------------------------------------------------------------------------
+
 (define (get-last-two liste)
   (let ((l (reverse liste)))
     (list (cadr l) (car l))))
+
+
+;;;----------------------------------------------------------------------------
+;;; Remove last two elements of list and returns it.
+;;;----------------------------------------------------------------------------
 
 (define (remove-last-two liste)
   (let ((l (reverse liste)))
         (reverse(cddr l))))
 
-;;MAIN PARSING FUNCTION
-(define (parse tree)
+
+;;;----------------------------------------------------------------------------
+;;; Main parsing function. Takes a list of numbers and operators an returns
+;;; the root of parsed tree.
+;;;----------------------------------------------------------------------------
+
+(define (parse liste)
   (define (parse-helper chaine stack tree)
     (cond
      ((and (null? chaine) (not(= 1 (length stack)))) 'ERROR_syntax_error)
@@ -126,9 +191,18 @@
                                         (append (remove-last-two stack)
                                                 (list(make-node c (get-last-two stack))))
                                         (list(make-node c (get-last-two stack)))))))))))))
-  (parse-helper tree '() '()))
+  (parse-helper liste '() '()))
+
+
+;;;----------------------------------------------------------------------------
+;;; Pretty-print a tree. For debugging purposes.
+;;;----------------------------------------------------------------------------
 
 (define (print-tree tree)
+  (define (print-spaces n)
+    (cond ((= n 0))
+          (else (display "  ")
+                (print-spaces (- n 1)))))
   (define (print-tree-help tree n)
     (print-spaces n)
     (display (get-data tree))
@@ -138,10 +212,10 @@
            (print-tree-help (get-lchild tree) (+ n 1)))))
   (print-tree-help tree 0))
 
-(define (print-spaces n)
-  (cond ((= n 0))
-        (else (display "  ")
-              (print-spaces (- n 1)))))
+
+;;;----------------------------------------------------------------------------
+;;; Returns Scheme syntax for the given tree.
+;;;----------------------------------------------------------------------------
 
 (define (display-scheme tree)
   (define (display-scheme-helper tree str)
@@ -152,6 +226,11 @@
          (else
           (string-append str " " (number->string(get-data tree))))))
   (string->list(display-scheme-helper tree "")))
+
+
+;;;----------------------------------------------------------------------------
+;;; Returns Postscript syntax for the given tree.
+;;;----------------------------------------------------------------------------
 
 (define (display-postscript tree)
   (define (display-postscript-helper tree str)
@@ -164,6 +243,11 @@
           (else
            (string-append str " " (number->string(get-data tree))))))
   (string->list(display-postscript-helper tree "")))
+
+
+;;;----------------------------------------------------------------------------
+;;; Returns C syntax for the given tree.
+;;;----------------------------------------------------------------------------
 
 (define (display-C tree)
   (define (display-C-helper tree str)
@@ -200,6 +284,11 @@
         (string-append str (number->string(get-data tree)))))
   (string->list(display-C-helper tree "")))
 
+
+;;;----------------------------------------------------------------------------
+;;; Transforms a list of characters to a parsable list.
+;;;----------------------------------------------------------------------------
+
 (define (preprocess input)
   (define (preprocess-helper input numbers output)
     (cond ((and (not(null? numbers))(null? input)) 'ERROR_syntax_error)
@@ -229,6 +318,14 @@
                    (else 'ERROR_unknown_char))))))
   (preprocess-helper input '() '()))
 
+
+;;;----------------------------------------------------------------------------
+;;; Takes a numerator and denominator and returns a formatted representation
+;;; of the result. l is the list of numbers contained in the result of the division
+;;; algorithm and ndl is the list of pairs of divided numbers seen during the
+;;; algorithm. The algorithm stop if it encounters a pair in ndl.
+;;;----------------------------------------------------------------------------
+
 (define (precise-division n d)
   (define (helper n d l ndl)
     (cond
@@ -252,6 +349,13 @@
                                (append ndl (list(cons n d)))))))))))
   (helper n d '() '()))
 
+
+;;;----------------------------------------------------------------------------
+;;; Takes the list of numbers to be formatted, the index of the first
+;;; occurence of the repeated character, and returns the formatted result as a
+;;; string. If pe is -1, no square brackets are added.
+;;;----------------------------------------------------------------------------
+
 (define (print-f-number l pe)
   (define (print-f-number-helper l str n)
     (if (null? l)
@@ -274,10 +378,25 @@
                 (+ n 1))))))
   (print-f-number-helper l "" 0))
 
+
+;;;----------------------------------------------------------------------------
+;;; Return true if pair p1 and pair p2 are equal.
+;;;----------------------------------------------------------------------------
+
 (define (pairs-equal? p1 p2)
   (if (and (= (car p1) (car p2)) (= (cdr p1)(cdr p2))) #t #f))
 
+
+;;;----------------------------------------------------------------------------
+;;; Return the index of the pair made of a and b if it's it the list, else
+;;; return false.
+;;;----------------------------------------------------------------------------
+
 (define (pair-exists? liste a b)
+  (define (list-index e l n)
+    (if (null? l) -1
+        (if (pairs-equal? (car l) e) n
+            (list-index e (cdr l) (+ 1 n)))))
   (if (null? liste) #f
       (if(assoc a liste)
          (if (and(= (car(assoc a liste)) a) (= (cdr(assoc a liste)) b))
@@ -285,12 +404,11 @@
              (pair-exists? (cdr liste) a b))
          #f)))
 
-(define (list-index e l n)
-  (if (null? l) -1
-      (if (pairs-equal? (car l) e) n
-          (list-index e (cdr l) (+ 1 n)))))
 
-;;Get value of current tree
+;;;----------------------------------------------------------------------------
+;;; Returns the value of the given tree.
+;;;----------------------------------------------------------------------------
+
 (define (get-value tree)
   (define (helper t)
     (cond ((number? (get-data t)) (get-data t))
@@ -310,7 +428,12 @@
 
 
 
-;;TRAITER EXPRESSION
+;;;----------------------------------------------------------------------------
+;;; Treats the given list of characters. If there is an error during
+;;; preprocessing, parsing or while computing the value, prints it. Else,
+;;; print the different syntaxes.
+;;;----------------------------------------------------------------------------
+
 (define traiter
   (lambda (expr)
     (let((e (preprocess expr)))
@@ -355,21 +478,3 @@
 (go)
 
 ;;;----------------------------------------------------------------------------
-
-;;TESTING
-;;(print-tree (parse (preprocess (string->list "1 2 + 5 /"))))
-;;(parse '())
-;(display-scheme tree1)
-;;(print (get-data tree1))
-;(print-tree tree1)
-(define tree2 (parse '(1 10 /)))
-(get-value tree2)
-
-;;(leaf? tree2)
-
-;;(get-data(get-rchild tree2))
-;;(get-rchild tree2)
-;;(get-data tree2)
-;;(parse '())
-;;(leaf? tree2)
-(integer? 3/4)
