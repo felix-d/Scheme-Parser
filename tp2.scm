@@ -42,7 +42,6 @@
         ((eq? '/ sym) 1)
         ((eq? '* sym) 0)))
 
-
 ;;List of operators
 (define operators '(+ - / *))
 
@@ -230,16 +229,86 @@
                    (else 'ERROR_unknown_char))))))
   (preprocess-helper input '() '()))
 
+(define (precise-division n d)
+  (define (helper n d l ndl)
+    (cond
+     ((= 0 (remainder n d)) (print-f-number (append l (list(quotient n d))) -1))
+     (else (if (= 0 (quotient n d))
+               (let ((x (* 10 n)))
+                 (let ((pe (pair-exists? ndl x d)))
+                   (if pe
+                       (print-f-number l pe)
+                       (helper x
+                               d
+                               (append l '(0))
+                               (append ndl (list (cons n d)))))))
+               (let ((x (* (- n (* d (quotient n d))) 10)))
+                 (let ((pe (pair-exists? ndl x d)))
+                   (if pe
+                       (print-f-number l pe)
+                       (helper x
+                               d
+                               (append l (list (quotient n d)))
+                               (append ndl (list(cons n d)))))))))))
+  (helper n d '() '()))
+
+(define (print-f-number l pe)
+  (define (print-f-number-helper l str n)
+    (if (null? l)
+        (if(= -1 pe) str (string-append str "]"))
+        (cond
+         ((= n 0)
+               (print-f-number-helper
+                (cdr l)
+                (string-append str (number->string(car l)) ".")
+                1))
+              ((= n pe)
+               (print-f-number-helper
+                (cdr l)
+                (string-append str "[" (number->string(car l)))
+                (+ n 1)))
+              (else
+               (print-f-number-helper
+                (cdr l)
+                (string-append str (number->string(car l)))
+                (+ n 1))))))
+  (print-f-number-helper l "" 0))
+
+(define (pairs-equal? p1 p2)
+  (if (and (= (car p1) (car p2)) (= (cdr p1)(cdr p2))) #t #f))
+
+(define (pair-exists? liste a b)
+  (if (null? liste) #f
+      (if(assoc a liste)
+         (if (and(= (car(assoc a liste)) a) (= (cdr(assoc a liste)) b))
+             (list-index (cons a b) liste 0)
+             (pair-exists? (cdr liste) a b))
+         #f)))
+
+(define (list-index e l n)
+  (if (null? l) -1
+      (if (pairs-equal? (car l) e) n
+          (list-index e (cdr l) (+ 1 n)))))
+
 ;;Get value of current tree
 (define (get-value tree)
-  (cond ((number? (get-data tree)) (get-data tree))
-        (else
-         (let ((v (get-value (get-rchild tree))))
-           (cond ((= v 0) 'ERROR_division_by_zero)
-                 (else
-                  (get-func (get-data tree))
-                  (get-value (get-lchild tree))
-                  v))))))
+  (define (helper t)
+    (cond ((number? (get-data t)) (get-data t))
+          (else
+           (let ((v (helper (get-rchild t))))
+
+             (cond ((= v 0) 'ERROR_division_by_zero)
+                   (else
+                    ((get-func (get-data t))
+                    (helper (get-lchild t))
+                    v)))))))
+  (let ((result (helper tree)))
+    (cond ((integer? result) (number->string result))
+          ((symbol? result) result)
+          (else(precise-division (numerator result)
+                                 (denominator result))))))
+
+
 
 ;;TRAITER EXPRESSION
 (define traiter
@@ -263,7 +332,7 @@
                                 (display-postscript ee)
                                 '(#\newline)
                                 (string->list "     Value: ")
-                                (string->list(number->string (get-value ee)))
+                                (string->list(get-value ee))
                                 '(#\newline)
                                 '(#\newline)))))))))))
 
@@ -293,7 +362,9 @@
 ;(display-scheme tree1)
 ;;(print (get-data tree1))
 ;(print-tree tree1)
-;(define tree2 (parse '(1 3 +)))
+(define tree2 (parse '(1 10 /)))
+(get-value tree2)
+
 ;;(leaf? tree2)
 
 ;;(get-data(get-rchild tree2))
@@ -301,3 +372,4 @@
 ;;(get-data tree2)
 ;;(parse '())
 ;;(leaf? tree2)
+(integer? 3/4)
