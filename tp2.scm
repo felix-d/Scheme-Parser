@@ -362,7 +362,6 @@
       (string-append "-" (helper (abs n) '() '()))
       (helper n '() '())))
 
-(append '() (list 1))
 
 ;;;----------------------------------------------------------------------------
 ;;; Takes the list of numbers to be formatted, the index of the first
