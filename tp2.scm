@@ -56,7 +56,10 @@
                                  (list->string expr) "\n\n")))
    ((eq? e 'ERROR_unknown_char)
     (string->list (string-append "CARACTERE INCONNU DANS L'EXPRESSION: "
-                                  (list->string expr) "\n\n")))))
+                                 (list->string expr) "\n\n")))
+   ((eq? e 'ERROR_division_by_zero)
+    (string->list (string-append "ERREUR DIVISION PAR ZERO DANS L'EXPRESSION: "
+                                 (list->string expr) "\n\n")))))
 
 ;;'(('data. data)'('('lchild. leftchild)'('rchild . rightchild))
 (define (make-node data children)
@@ -230,11 +233,14 @@
 ;;Get value of current tree
 (define (get-value tree)
   (cond ((number? (get-data tree)) (get-data tree))
-        (else ((get-func (get-data tree))
-               (get-value (get-lchild tree))
-               (let ((v (get-value (get-rchild tree)))) (if(= v 0)
-                                                           'ERROR_division_by_zero
-                                                           v))))))
+        (else
+         (let ((v (get-value (get-rchild tree))))
+           (cond ((= v 0) 'ERROR_division_by_zero)
+                 (else
+                  (get-func (get-data tree))
+                  (get-value (get-lchild tree))
+                  v))))))
+
 ;;TRAITER EXPRESSION
 (define traiter
   (lambda (expr)
@@ -245,6 +251,8 @@
             (cond ((symbol? ee) ; parsing error
                 (display-error ee expr))
                   (else
+                   (let ((eee (get-value ee))) (if(symbol? eee) (display-error
+                                                                 eee expr)
                         (append (string->list "    Scheme:")
                                 (display-scheme ee)
                                 '(#\newline)
@@ -257,7 +265,7 @@
                                 (string->list "     Value: ")
                                 (string->list(number->string (get-value ee)))
                                 '(#\newline)
-                                '(#\newline)))))))))
+                                '(#\newline)))))))))))
 
 ;;;----------------------------------------------------------------------------
 ;;; Ne pas modifier cette section.
