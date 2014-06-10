@@ -17,7 +17,17 @@
 ;;; sera imprimée comme résultat de l'expression entrée.  Vos
 ;;; fonctions ne doivent pas faire d'affichage car c'est la fonction
 ;;; "go" qui se charge de cela.
+(define list-index
+  (lambda (lst e)
+    (if (null? lst)
+        #f
+        (if (= (car lst) e)
+            0
+            (if (eq? (list-index (cdr lst) e) #f)
+                #f
+                (+ 1 (list-index (cdr lst) e)))))))
 
+(list-index (list 1 'test 3) 3)
 ;;;----------------------------------------------------------------------------
 ;;; Get postscript symbol matching the operator.
 ;;;----------------------------------------------------------------------------
@@ -327,88 +337,58 @@
 ;;;----------------------------------------------------------------------------
 
 (define (precise-division n d)
-   (define (helper n d l ndl)
+
+  (define (helper n l ul)
      (cond
       ((= 0 (remainder n d)) (print-f-number (append l (list(quotient n d))) -1))
       (else (if (= 0 (quotient n d))
                 (let ((x (* 10 n)))
-                  (let ((pe (pair-exists? ndl x d)))
+                  (let ((pe (list-index ul x)))
                     (if pe
                         (print-f-number l pe)
                         (helper x
-                                d
                                 (append l '(0))
-                                (append ndl (list (cons n d)))))))
+                                (append ul (list n))))))
                 (let ((x (* (- n (* d (quotient n d))) 10)))
-                  (let ((pe (pair-exists? ndl n d)))
+                  (let ((pe (list-index ul n)))
                     (if pe
                         (print-f-number l pe)
                         (helper x
-                                d
                                 (append l (list (quotient n d)))
                                 (if (not(null? l))
-                                    (append ndl (list(cons n d)))
-                                    '())))))))))
-   (helper n d '() '()))
+                                    (append ul (list n))
+                                    (append ul (list 999)))))))))))
+  (if (< n 0)
+      (string-append "-" (helper (abs n) '() '()))
+      (helper n '() '())))
 
+(append '() (list 1))
 
 ;;;----------------------------------------------------------------------------
 ;;; Takes the list of numbers to be formatted, the index of the first
 ;;; occurence of the repeated character, and returns the formatted result as a
-;;; string. If pe is -1, no square brackets are added.
+;;; string. If pe is -1, no square brackets are added because there is no
+;;; repeated decimals.
 ;;;----------------------------------------------------------------------------
 
 (define (print-f-number l pe)
-  (helper pe l "" -1 '()))
-
-  (define (helper pe l str n c)
-    (if (null? l)
+  (define (helper l str n c)
+    (if (null? l) ;If end of input?
         (if(= -1 pe) str (string-append str "]"))
-        (cond ((= n -1)
-               (helper pe
-                       (cdr l)
-                       (string-append str (number->string(car l)) ".")
-                       (+ n 1)
-                       (car l)))
-         ((or (and(= pe 1)(= 0 n))
-              (= n pe)
-              (if(not(null? c))
-                 (and(= (car l) c)
-                     (= n 1)
-                     (= (length l) 1))
-                 #f))
-          (helper pe (cdr l)
-                  (string-append str "[" (number->string(car l)))
-                  (+ n 1) '()))
-         (else (helper pe (cdr l)
-                       (string-append str (number->string(car l)))
-                       (+ n 1) '())))))
-
-
-;;;----------------------------------------------------------------------------
-;;; Return true if pair p1 and pair p2 are equal.
-;;;----------------------------------------------------------------------------
-
-(define (pairs-equal? p1 p2)
-  (if (and (= (car p1) (car p2)) (= (cdr p1)(cdr p2))) #t #f))
-
-
-;;;----------------------------------------------------------------------------
-;;; Return the index of the pair made of a and b if it's it the list, else
-;;; return false.
-;;;----------------------------------------------------------------------------
-
-(define (pair-exists? liste a b)
-  (define (list-index e l n)
-    (if (null? l) -1
-        (if (pairs-equal? (car l) e) n
-            (list-index e (cdr l) (+ 1 n)))))
-  (if (null? liste) #f
-      (if(assoc a liste)
-         (if (and(= (car(assoc a liste)) a) (= (cdr(assoc a liste)) b))
-             (list-index (cons a b) liste 0)
-             (pair-exists? (cdr liste) a b))
-         #f)))
+        (cond ((= n 0)
+               (helper
+                (cdr l)
+                (string-append str (number->string(car l)) ".")
+                (+ n 1)
+                (car l)))
+              ((= n pe) ;if current iteration is first repeated number
+               (helper (cdr l)
+                        (string-append str "[" (number->string(car l)))
+                        (+ n 1) '()))
+              (else (helper (cdr l)
+                             (string-append str (number->string(car l)))
+                             (+ n 1) '())))))
+  (helper l "" 0 '()))
 
 
 ;;;----------------------------------------------------------------------------
