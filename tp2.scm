@@ -1,3 +1,4 @@
+
 ;;; Fichier : tp2.scm
 
 ;;; Ce programme est une version incomplete du TP2.  Vous devez uniquement
@@ -17,6 +18,12 @@
 ;;; sera imprimée comme résultat de l'expression entrée.  Vos
 ;;; fonctions ne doivent pas faire d'affichage car c'est la fonction
 ;;; "go" qui se charge de cela.
+
+
+;;;----------------------------------------------------------------------------
+;;; If e is in the list, get its index, else return false.
+;;;----------------------------------------------------------------------------
+
 (define list-index
   (lambda (lst e)
     (if (null? lst)
@@ -27,7 +34,6 @@
                 #f
                 (+ 1 (list-index (cdr lst) e)))))))
 
-(list-index (list 1 'test 3) 3)
 ;;;----------------------------------------------------------------------------
 ;;; Get postscript symbol matching the operator.
 ;;;----------------------------------------------------------------------------
@@ -268,14 +274,8 @@
                  (not(leaf? (get-lchild tree)))
                  (> (get-precedance (get-data tree))
                     (get-precedance(get-data (get-lchild tree)))))
-                (string-append "("
-                               (helper
-                                (get-lchild tree)
-                                str)
-                               ")"))
-               (else
-                (helper (get-lchild tree) str)))
-
+                (string-append "(" (helper (get-lchild tree) str) ")"))
+               (else (helper (get-lchild tree) str)))
          (symbol->string(get-data tree))
          (cond ((or
                  (and
@@ -337,7 +337,6 @@
 ;;;----------------------------------------------------------------------------
 
 (define (precise-division n d)
-
   (define (helper n l ul)
      (cond
       ((= 0 (remainder n d)) (print-f-number (append l (list(quotient n d))) -1))
@@ -357,7 +356,8 @@
                                 (append l (list (quotient n d)))
                                 (if (not(null? l))
                                     (append ul (list n))
-                                    (append ul (list 999)))))))))))
+                                    ;to avoid brackets on the first number
+                                    (append ul (list 0)))))))))))
   (if (< n 0)
       (string-append "-" (helper (abs n) '() '()))
       (helper n '() '())))
@@ -428,8 +428,9 @@
             (cond ((symbol? ee) ; parsing error
                 (display-error ee expr))
                   (else
-                   (let ((eee (get-value ee))) (if(symbol? eee) (display-error
-                                                                 eee expr)
+                   (let ((eee (get-value ee)))
+                     (if(symbol? eee) ; Evaluation error
+                        (display-error eee expr)
                         (append (string->list "    Scheme:")
                                 (display-scheme ee)
                                 '(#\newline)
