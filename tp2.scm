@@ -400,7 +400,7 @@
           (else
            (let ((v (helper (get-rchild t))))
 
-             (cond ((= v 0) 'ERROR_division_by_zero)
+             (cond ((and(= v 0) (eq? '/ (get-data t))) 'ERROR_division_by_zero)
                    (else
                     ((get-func (get-data t))
                     (helper (get-lchild t))
