@@ -34,6 +34,23 @@
                 #f
                 (+ 1 (list-index (cdr lst) e)))))))
 
+
+;;;----------------------------------------------------------------------------
+;;; Transforms a list of digits to a number
+;;;----------------------------------------------------------------------------
+
+(define (list->number i)
+  (string->number(list->string i)))
+
+
+;;;----------------------------------------------------------------------------
+;;; Transforms a list containing a character to a symbol
+;;;----------------------------------------------------------------------------
+
+(define (list->symbol i)
+  (string->symbol(list->string i)))
+
+
 ;;;----------------------------------------------------------------------------
 ;;; Get postscript symbol matching the operator.
 ;;;----------------------------------------------------------------------------
@@ -163,7 +180,7 @@
 (define (leaf? node)
   (null? (car(get-children node))))
 
-
+;(define o (lambda (f g) (lambda (x) (f(g x)))))
 ;;;----------------------------------------------------------------------------
 ;;; Get last two elements of list as a list.
 ;;;----------------------------------------------------------------------------
@@ -190,6 +207,7 @@
 (define (parse liste)
   (define (helper chaine stack tree)
     (cond
+     ((= 1 (length liste)) (make-node (car chaine) '()))
      ((and (null? chaine) (not(= 1 (length stack)))) 'ERROR_syntax_error)
      (else (if (null? chaine)
                (car tree)
@@ -206,7 +224,8 @@
                     (else (helper (cdr chaine)
                                         (append (remove-last-two stack)
                                                 (list(make-node c (get-last-two stack))))
-                                        (list(make-node c (get-last-two stack)))))))))))))
+                                        (list(make-node c (get-last-two
+							   stack)))))))))))))
   (helper liste '() '()))
 
 
@@ -301,39 +320,48 @@
 
 (define (preprocess input)
   (define (helper input numbers output)
-    (cond ((and (not(null? numbers))(null? input)) 'ERROR_syntax_error)
-          ((and (null? input)(null? output)) 'ERROR_empty_expression)
-          ((and (null? input)(null? numbers)(not(null? output))) output)
-          (else
-           (let ((digit (string->number (list->string(list(car input)))))
-                 (num (string->number(list->string numbers)))
-                 (sym (string->symbol(list->string(list(car input)))))
-                 (numbers? (not(null? numbers))))
-             (cond ((number? digit)
-                    (helper (cdr input)
-                                (append numbers (list(car input)))
-                                output))
-                   ((eq? (car input) #\space)
-                    (helper (cdr input)
-                                '()
-                                (if numbers?
-                                    (append output (list num))
-                                    output)))
-                   ((member sym operators)
-                    (helper (cdr input)
-                                '()
-                                (if numbers?
-                                    (append output (list num) (list sym))
-                                    (append output (list sym)))))
+    (cond
+					;If there are still numbers
+					;in the stack but no other character to process
+     ((and (not(null? numbers))(null? input)(not(null? output)))
+      'ERROR_syntax_error)
+					;If the expression is empty
+     ((and (null? input)(null? output)(null? numbers))
+      'ERROR_empty_expression)
+					;If there is only a number
+     ((and (null? input)(null? output)) (list(list->number numbers)))
+     ((and (null? input)(null? numbers)(not(null? output))) output)
+     (else
+      (let ((digit (list->number(list(car input))))
+	    (num (list->number numbers))
+	    (sym (list->symbol(list(car input))))
+	    (numbers? (not(null? numbers))))
+					;Input is either a digit, op or space
+					;If its a space or op, check for digit stacked in numbers
+					;and add number to list
+	(cond ((number? digit)
+	       (helper (cdr input)
+		       (append numbers (list(car input)))
+		       output))
+	      ((eq? (car input) #\space)
+	       (helper (cdr input) '()
+		       (if numbers?
+			   (append output (list num))
+			   output)))
+	      ((member sym operators)
+	       (helper (cdr input) '()
+		       (if numbers?
+			   (append output (list num) (list sym))
+			   (append output (list sym)))))
                    (else 'ERROR_unknown_char))))))
   (helper input '() '()))
 
-
+(preprocess '(#\1))
 ;;;----------------------------------------------------------------------------
 ;;; Takes a numerator and denominator and returns a formatted representation
 ;;; of the result. l is the list of numbers contained in the result of the division
-;;; algorithm and ndl is the list of pairs of divided numbers seen during the
-;;; algorithm. The algorithm stop if it encounters a pair in ndl.
+;;; algorithm and ndl is the list of divided numbers seen during the
+;;; algorithm. The algorithm stop if it encounters a number in ul.
 ;;;----------------------------------------------------------------------------
 
 (define (precise-division n d)
@@ -358,6 +386,7 @@
                                     (append ul (list n))
                                     ;to avoid brackets on the first number
                                     (append ul (list 0)))))))))))
+  ;For negative numbers
   (if (< n 0)
       (string-append "-" (helper (abs n) '() '()))
       (helper n '() '())))
