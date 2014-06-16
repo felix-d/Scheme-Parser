@@ -369,23 +369,21 @@
      (cond
       ((= 0 (remainder n d)) (print-f-number (append l (list(quotient n d))) -1))
       (else (if (= 0 (quotient n d))
-                (let ((x (* 10 n)))
-                  (let ((pe (list-index ul x)))
-                    (if pe
-                        (print-f-number l pe)
-                        (helper x
-                                (append l '(0))
-                                (append ul (list n))))))
-                (let ((x (* (- n (* d (quotient n d))) 10)))
-                  (let ((pe (list-index ul n)))
-                    (if pe
-                        (print-f-number l pe)
-                        (helper x
-                                (append l (list (quotient n d)))
-                                (if (not(null? l))
-                                    (append ul (list n))
+		(let ((pe (list-index ul n)))
+		  (if pe
+		      (print-f-number l pe)
+		      (helper (* 10 n)
+			      (append l '(0))
+			      (append ul (list n)))))
+		(let ((pe (list-index ul n)))
+		  (if pe
+		      (print-f-number l pe)
+		      (helper (* (- n (* d (quotient n d))) 10)
+			      (append l (list (quotient n d)))
+			      (if (not(null? l))
+				  (append ul (list n))
                                     ;to avoid brackets on the first number
-                                    (append ul (list 0)))))))))))
+                                    (append ul (list 0))))))))))
   ;For negative numbers
   (if (< n 0)
       (string-append "-" (helper (abs n) '() '()))
