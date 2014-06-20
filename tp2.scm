@@ -227,7 +227,7 @@
 							   stack)))))))))))))
   (if (= 1 (length liste))
       (if(number? (car liste)) ;If there's only a number
-	 (make-node (car chaine) '()) ;If there's only a character
+	 (make-node (car liste) '()) ;If there's only a character
 	 'ERROR_syntax_error)
 	 (parse-h liste '() '()))) ;Else
 
