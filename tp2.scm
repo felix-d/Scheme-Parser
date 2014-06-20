@@ -180,7 +180,7 @@
 (define (leaf? node)
   (null? (car(get-children node))))
 
-;(define o (lambda (f g) (lambda (x) (f(g x)))))
+
 ;;;----------------------------------------------------------------------------
 ;;; Get last two elements of list as a list.
 ;;;----------------------------------------------------------------------------
@@ -207,7 +207,6 @@
 (define (parse liste)
   (define (helper chaine stack tree)
     (cond
-     ((= 1 (length liste)) (make-node (car chaine) '()))
      ((and (null? chaine) (not(= 1 (length stack)))) 'ERROR_syntax_error)
      (else (if (null? chaine)
                (car tree)
@@ -226,7 +225,11 @@
                                                 (list(make-node c (get-last-two stack))))
                                         (list(make-node c (get-last-two
 							   stack)))))))))))))
-  (helper liste '() '()))
+  (if (= 1 (length liste))
+      (if(number? (car liste))
+	 (make-node (car chaine) '())
+	 'ERROR_syntax_error)
+	 (helper liste '() '())))
 
 
 ;;;----------------------------------------------------------------------------
@@ -356,7 +359,6 @@
                    (else 'ERROR_unknown_char))))))
   (helper input '() '()))
 
-(preprocess '(#\1))
 ;;;----------------------------------------------------------------------------
 ;;; Takes a numerator and denominator and returns a formatted representation
 ;;; of the result. l is the list of numbers contained in the result of the division
@@ -398,23 +400,22 @@
 ;;;----------------------------------------------------------------------------
 
 (define (print-f-number l pe)
-  (define (helper l str n c)
+  (define (helper l str n)
     (if (null? l) ;If end of input?
         (if(= -1 pe) str (string-append str "]"))
         (cond ((= n 0)
                (helper
                 (cdr l)
                 (string-append str (number->string(car l)) ".")
-                (+ n 1)
-                (car l)))
+                (+ n 1)))
               ((= n pe) ;if current iteration is first repeated number
                (helper (cdr l)
                         (string-append str "[" (number->string(car l)))
-                        (+ n 1) '()))
+                        (+ n 1)))
               (else (helper (cdr l)
                              (string-append str (number->string(car l)))
-                             (+ n 1) '())))))
-  (helper l "" 0 '()))
+                             (+ n 1))))))
+  (helper l "" 0))
 
 
 ;;;----------------------------------------------------------------------------
