@@ -205,7 +205,7 @@
 ;;;----------------------------------------------------------------------------
 
 (define (parse liste)
-  (define (helper chaine stack tree)
+  (define (parse-h chaine stack tree)
     (cond
      ((and (null? chaine) (not(= 1 (length stack)))) 'ERROR_syntax_error)
      (else (if (null? chaine)
@@ -214,22 +214,22 @@
                  (cond
                   ((null? c) (car tree))
                   ((number? c)
-                   (helper (cdr chaine)
+                   (parse-h (cdr chaine)
                                  (append stack (list(make-node c '())))
                                  tree))
                   ((symbol? c)
                    (cond
                     ((< (length stack) 2) 'ERROR_syntax_error)
-                    (else (helper (cdr chaine)
+                    (else (parse-h (cdr chaine)
                                         (append (remove-last-two stack)
                                                 (list(make-node c (get-last-two stack))))
                                         (list(make-node c (get-last-two
 							   stack)))))))))))))
   (if (= 1 (length liste))
-      (if(number? (car liste))
-	 (make-node (car chaine) '())
+      (if(number? (car liste)) ;If there's only a number
+	 (make-node (car chaine) '()) ;If there's only a character
 	 'ERROR_syntax_error)
-	 (helper liste '() '())))
+	 (parse-h liste '() '()))) ;Else
 
 
 ;;;----------------------------------------------------------------------------
@@ -241,14 +241,14 @@
     (cond ((= n 0))
           (else (display "  ")
                 (print-spaces (- n 1)))))
-  (define (helper tree n)
+  (define (print-tree-h tree n)
     (print-spaces n)
     (display (get-data tree))
     (newline)
     (cond ((not(leaf? tree))
-           (helper (get-rchild tree) (+ n 1))
-           (helper (get-lchild tree) (+ n 1)))))
-  (helper tree 0))
+           (print-tree-h (get-rchild tree) (+ n 1))
+           (print-tree-h (get-lchild tree) (+ n 1)))))
+  (print-tree-h tree 0))
 
 
 ;;;----------------------------------------------------------------------------
@@ -256,14 +256,14 @@
 ;;;----------------------------------------------------------------------------
 
 (define (display-scheme tree)
-  (define (helper tree str)
+  (define (display-scheme-h tree str)
     (cond((not(leaf? tree))
           (string-append str " (" (symbol->string(get-data tree))
-                         (helper (get-lchild tree) str)
-                         (helper (get-rchild tree) str) ")"))
+                         (display-scheme-h (get-lchild tree) str)
+                         (display-scheme-h (get-rchild tree) str) ")"))
          (else
           (string-append str " " (number->string(get-data tree))))))
-  (string->list(helper tree "")))
+  (string->list(display-scheme-h tree "")))
 
 
 ;;;----------------------------------------------------------------------------
@@ -271,16 +271,16 @@
 ;;;----------------------------------------------------------------------------
 
 (define (display-postscript tree)
-  (define (helper tree str)
+  (define (display-postscript-h tree str)
     (cond ((not(leaf? tree))
            (string-append str
-                          (helper (get-lchild tree) str)
-                          (helper (get-rchild tree) str)
+                          (display-postscript-h (get-lchild tree) str)
+                          (display-postscript-h (get-rchild tree) str)
                           " "
                           (symbol->string(get-postscript(get-data tree)))))
           (else
            (string-append str " " (number->string(get-data tree))))))
-  (string->list(helper tree "")))
+  (string->list(display-postscript-h tree "")))
 
 
 ;;;----------------------------------------------------------------------------
@@ -288,7 +288,7 @@
 ;;;----------------------------------------------------------------------------
 
 (define (display-C tree)
-  (define (helper tree str)
+  (define (display-C-h tree str)
     (if (not(leaf? tree))
         (string-append
          str
@@ -296,8 +296,8 @@
                  (not(leaf? (get-lchild tree)))
                  (> (get-precedance (get-data tree))
                     (get-precedance(get-data (get-lchild tree)))))
-                (string-append "(" (helper (get-lchild tree) str) ")"))
-               (else (helper (get-lchild tree) str)))
+                (string-append "(" (display-C-h (get-lchild tree) str) ")"))
+               (else (display-C-h (get-lchild tree) str)))
          (symbol->string(get-data tree))
          (cond ((or
                  (and
@@ -309,12 +309,12 @@
                   (eq? (get-precedance(get-data tree))
                        (get-precedance(get-data(get-rchild tree))))
                   (eq? (get-dependance (get-data tree)) 1)))
-                (string-append "(" (helper (get-rchild
+                (string-append "(" (display-C-h (get-rchild
                                                       tree) str)
                                ")"))
-               (else (helper (get-rchild tree) str))))
+               (else (display-C-h (get-rchild tree) str))))
         (string-append str (number->string(get-data tree)))))
-  (string->list(helper tree "")))
+  (string->list(display-C-h tree "")))
 
 
 ;;;----------------------------------------------------------------------------
@@ -322,7 +322,7 @@
 ;;;----------------------------------------------------------------------------
 
 (define (preprocess input)
-  (define (helper input numbers output)
+  (define (preprocess-h input numbers output)
     (cond
 					;If there are still numbers
 					;in the stack but no other character to process
@@ -343,21 +343,21 @@
 					;If its a space or op, check for digit stacked in numbers
 					;and add number to list
 	(cond ((number? digit)
-	       (helper (cdr input)
+	       (preprocess-h (cdr input)
 		       (append numbers (list(car input)))
 		       output))
 	      ((eq? (car input) #\space)
-	       (helper (cdr input) '()
+	       (preprocess-h (cdr input) '()
 		       (if numbers?
 			   (append output (list num))
 			   output)))
 	      ((member sym operators)
-	       (helper (cdr input) '()
+	       (preprocess-h (cdr input) '()
 		       (if numbers?
 			   (append output (list num) (list sym))
 			   (append output (list sym)))))
                    (else 'ERROR_unknown_char))))))
-  (helper input '() '()))
+  (preprocess-h input '() '()))
 
 ;;;----------------------------------------------------------------------------
 ;;; Takes a numerator and denominator and returns a formatted representation
@@ -367,20 +367,20 @@
 ;;;----------------------------------------------------------------------------
 
 (define (precise-division n d)
-  (define (helper n l ul)
+  (define (precise-divison-h n l ul)
      (cond
       ((= 0 (remainder n d)) (print-f-number (append l (list(quotient n d))) -1))
       (else (if (= 0 (quotient n d))
 		(let ((pe (list-index ul n)))
 		  (if pe
 		      (print-f-number l pe)
-		      (helper (* 10 n)
+		      (precise-divison-h (* 10 n)
 			      (append l '(0))
 			      (append ul (list n)))))
 		(let ((pe (list-index ul n)))
 		  (if pe
 		      (print-f-number l pe)
-		      (helper (* (- n (* d (quotient n d))) 10)
+		      (precise-divison-h (* (- n (* d (quotient n d))) 10)
 			      (append l (list (quotient n d)))
 			      (if (not(null? l))
 				  (append ul (list n))
@@ -388,8 +388,8 @@
                                     (append ul (list 0))))))))))
   ;For negative numbers
   (if (< n 0)
-      (string-append "-" (helper (abs n) '() '()))
-      (helper n '() '())))
+      (string-append "-" (precise-divison-h (abs n) '() '()))
+      (precise-divison-h n '() '())))
 
 
 ;;;----------------------------------------------------------------------------
@@ -400,22 +400,22 @@
 ;;;----------------------------------------------------------------------------
 
 (define (print-f-number l pe)
-  (define (helper l str n)
+  (define (print-f-number-h l str n)
     (if (null? l) ;If end of input?
         (if(= -1 pe) str (string-append str "]"))
         (cond ((= n 0)
-               (helper
+               (print-f-number-h
                 (cdr l)
                 (string-append str (number->string(car l)) ".")
                 (+ n 1)))
               ((= n pe) ;if current iteration is first repeated number
-               (helper (cdr l)
+               (print-f-number-h (cdr l)
                         (string-append str "[" (number->string(car l)))
                         (+ n 1)))
-              (else (helper (cdr l)
+              (else (print-f-number-h (cdr l)
                              (string-append str (number->string(car l)))
                              (+ n 1))))))
-  (helper l "" 0))
+  (print-f-number-h l "" 0))
 
 
 ;;;----------------------------------------------------------------------------
@@ -423,17 +423,17 @@
 ;;;----------------------------------------------------------------------------
 
 (define (get-value tree)
-  (define (helper t)
+  (define (get-value-h t)
     (cond ((number? (get-data t)) (get-data t))
           (else
-           (let ((v (helper (get-rchild t))))
+           (let ((v (get-value-h (get-rchild t))))
 
              (cond ((and(= v 0) (eq? '/ (get-data t))) 'ERROR_division_by_zero)
                    (else
                     ((get-func (get-data t))
-                    (helper (get-lchild t))
+                    (get-value-h (get-lchild t))
                     v)))))))
-  (let ((result (helper tree)))
+  (let ((result (get-value-h tree)))
     (cond ((integer? result) (number->string result))
           ((symbol? result) result)
           (else(precise-division (numerator result)
