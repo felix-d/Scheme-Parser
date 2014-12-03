@@ -1,23 +1,5 @@
-
-;;; Fichier : tp2.scm
-
-;;; Ce programme est une version incomplete du TP2.  Vous devez uniquement
-;;; changer et ajouter du code dans la première section.
-
-;;;----------------------------------------------------------------------------
-
-;;; Vous devez modifier cette section.  La fonction "traiter" doit
-;;; être définie, et vous pouvez ajouter des définitions de fonction
-;;; afin de bien décomposer le traitement à faire en petites
-;;; fonctions.  Il faut vous limiter au sous-ensemble *fonctionnel* de
-;;; Scheme dans votre codage (donc n'utilisez pas set!, set-car!,
-;;; begin, etc).
-
-;;; La fonction traiter reçoit en paramètre une liste de caractères
-;;; contenant l'expression lue et retourne une liste de caractères qui
-;;; sera imprimée comme résultat de l'expression entrée.  Vos
-;;; fonctions ne doivent pas faire d'affichage car c'est la fonction
-;;; "go" qui se charge de cela.
+;;; SCHEME PARSER
+;;; Authors: Felix Descoteaux & Pascal Champagne
 
 
 ;;;----------------------------------------------------------------------------
